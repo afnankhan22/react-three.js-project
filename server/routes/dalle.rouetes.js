@@ -1,33 +1,39 @@
-import express from "express";
-import * as dotenv from 'dotenv'
-import { OpenAI} from 'openai'
-import axios from 'axios'
+import express from 'express';
+import * as dotenv from 'dotenv';
+import OpenAI from 'openai';
 
-const router = express.Router()
+dotenv.config();
 
+const router = express.Router();
 
-dotenv.config()
+const config = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-const axios = require('axios');
+const openai = new OpenAI(config);
 
-const options = {
-  method: 'POST',
-  url: 'https://ai-text-to-image-generator-api.p.rapidapi.com/realistic',
-  headers: {
-    'content-type': 'application/json',
-    'X-RapidAPI-Key': '1922e5fa1bmsh3d414cd5187d701p1b2a1ajsn3ec2eb9685f5',
-    'X-RapidAPI-Host': 'ai-text-to-image-generator-api.p.rapidapi.com'
-  },
-  data: {
-    inputs: 'Find serenity in the tranquil elegance of a solitary sailboat drifting on a glassy lake at sunset'
+router.route('/').get((req, res) => {
+  res.status(200).json({ message: "Hello from DALL.E ROUTES" })
+})
+
+router.route('/').post(async (req, res) => {
+  try {
+    const { prompt } = req.body;
+
+    const response = await openai.createImage({
+      prompt,
+      n: 1,
+      size: '1024x1024',
+      response_format: 'b64_json'
+    });
+
+    const image = response.data.data[0].b64_json;
+
+    res.status(200).json({ photo: image });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" })
   }
-};
+})
 
-try {
-	const response = await axios.request(options);
-	console.log(response.data);
-} catch (error) {
-	console.error(error);
-}
-
-export default router
+export default router;
